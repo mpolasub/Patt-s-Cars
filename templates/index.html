@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Patt's Top 10 Cars{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="heading">Patt's Top 10 Cars</h1>
+  <p class="description">These are Patt's all-time favourite cars.</p>
+
+    {% for car in cars: %}
+  <div class="card" >
+    <div class="front" style="background-image: url( '{{ car.img_url }}' );">
+        <p class="large">{{ car.ranking }}</p>
+    </div>
+    <div class="back">
+      <div>
+    <div class="title">{{ car.name }} <span class="release_date">({{ car.year }})</span></div>
+<!--        <div class="rating">-->
+<!--            <label>{{ car.rating }}</label>-->
+<!--          <i class="fas fa-star star"></i>-->
+<!--        </div>-->
+          <p class="review">"{{ car.review }}"</p>
+        <p class="overview">
+            {{ car.description }}
+        </p>
+
+        <a href="#" class="button">Update</a>
+        <a href="#" class="button delete-button">Delete</a>
+
+      </div>
+    </div>
+  </div>
+    {% endfor %}
+
+</div>
+<div class="container text-center add">
+<a href="#" class="button">Add Car</a>
+</div>
+
+{% endblock %}
