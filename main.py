@@ -5,7 +5,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Float
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, URL, Length
 import requests
 
 '''
@@ -34,15 +34,22 @@ db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
 
-# CREATE TABLE
-# id
-# title
-# year
-# description
-# rating
-# ranking
-# review
-# img_url
+class CarForm(FlaskForm):
+    rating = StringField('Rating', validators=[])
+    comment = StringField('Comment', validators=[Length(min=0, max=75)])
+    img_link = StringField("Image Link (URL)", validators=[])
+    submit = SubmitField('Submit')
+
+class AddCarForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    year = StringField("Year", validators=[DataRequired()])
+    rating = StringField('Rating', validators=[DataRequired()])
+    comment = StringField('Comment', validators=[DataRequired(), Length(min=0, max=75)])
+    description = StringField("Description", validators=[DataRequired(), Length(min=0, max=500)])
+    img_url = StringField("Image Link (URL)", validators=[DataRequired()])
+
+    submit = SubmitField('Submit')
+
 
 class Car(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -74,10 +81,53 @@ class Car(db.Model):
 
 @app.route("/")
 def home():
-    result = db.session.execute(db.select(Car).order_by(Car.ranking))
-    all_cars = list(result.scalars())
+    result = db.session.execute(db.select(Car).order_by(Car.rating.desc()))
+    all_cars = result.scalars().all()  # convert ScalarResult to Python List
+
+    for i in range(len(all_cars)):
+        all_cars[i].ranking = i+1
+    db.session.commit()
     return render_template("index.html", cars=all_cars)
 
+@app.route("/edit", methods=['GET', 'POST'])
+def edit():
+    car_id = request.args.get("id")
+    car = db.get_or_404(Car, car_id)
+    car_form = CarForm()
+    if car_form.validate_on_submit():
+        if car_form.rating.data != "":
+            car.rating = float(car_form.rating.data)
+        if car_form.img_link.data != "":
+            car.img_url = car_form.img_link.data
+        if car_form.comment.data != "":
+            car.review = car_form.comment.data
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template("edit.html", car=car, form=car_form)
+
+@app.route("/delete", methods=['GET', 'POST'])
+def delete():
+    car_id = request.args.get('id')
+    car = db.get_or_404(Car, car_id)
+    db.session.delete(car)
+    db.session.commit()
+    return redirect(url_for('home'))
+
+@app.route("/add", methods=['GET', 'POST'])
+def add():
+    car_form = AddCarForm()
+    if car_form.validate_on_submit():
+        new_car = Car(name=car_form.name.data,
+                      year=car_form.year.data,
+                      description=car_form.description.data,
+                      rating=car_form.rating.data,
+                      review=car_form.comment.data,
+                      img_url=car_form.img_url.data,
+                      ranking=1)
+        db.session.add(new_car)
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template("add.html", form=car_form)
 
 if __name__ == '__main__':
     app.run(debug=True)
