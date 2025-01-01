@@ -7,6 +7,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, URL, Length
 import requests
+import os
 
 '''
 Red underlines? Install the required packages first: 
@@ -130,4 +131,5 @@ def add():
     return render_template("add.html", form=car_form)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = os.getenv('PORT', '5000')
+    app.run(host='0.0.0.0', port=int(port))
